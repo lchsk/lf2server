@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import json
-import md5
+import traceback, sys
+import datetime
 
 class MessageInterpreter(object):
     def __init__(self, factory):
@@ -37,9 +38,21 @@ class MessageInterpreter(object):
                 if user != self.message['username']:
                     self.factory.users[user]['client'].transport.write(self.raw_message)    
 
+        # CreateGame Packet
+        #{\"type\": \"1\", \"admin\": \"admin\"}
+        elif self.message['type'] == '1':
+            admin = self.message['admin']
+            self.factory.games[admin] = { 'open' : False, 'date' : datetime.datetime.now() }
+
+            # send back to the admin
+            for user in self.factory.users:
+                if user == self.message['admin']:
+                    self.factory.users[user]['client'].transport.write(self.raw_message)    
+
 
     def error(self, pack):
         print 'Error while interpreting'
+        traceback.print_exc(file=sys.stdout)
 
     def test(self):
         print 'test'
