@@ -15,11 +15,11 @@ class MessageInterpreter(object):
         self.protocol = pack[1]
         self.message = json.loads(self.raw_message)
         print self.message
-        print 'type: ' + self.message['type'] 
+        print 'id: ' + self.message['id'] 
 
         # Welcome 
-        #{"type": "W", "username": "lchsk", "platform":"A"}
-        if self.message['type'] == 'W':
+        #{"id": "W", "username": "lchsk", "platform":"A"}
+        if self.message['id'] == 'W':
             print self.message['username']
             #print self.factory.users
             
@@ -33,21 +33,21 @@ class MessageInterpreter(object):
                 'You (' + str(self.message['username']) + ') joined the game.')
 
         # Message
-        #{"type":"M", "username": "lchsk", "x": "12", "y": "100", "anim": "1"}
-        elif self.message['type'] == 'M':
+        #{"id":"M", "username": "lchsk", "x": "12", "y": "100", "anim": "1"}
+        elif self.message['id'] == 'M':
             for user in self.factory.users:
                 if user != self.message['username']:
                     self.factory.users[user]['client'].transport.write(self.raw_message)    
 
         # CreateGame Packet
-        #{\"type\": \"1\", \"admin\": \"admin\"}
-        elif self.message['type'] == '1':
+        #{\"id\": \"1\", \"admin\": \"admin\"}
+        elif self.message['id'] == '1':
             admin = self.message['admin']
             dat = datetime.datetime.now()
             self.factory.games[admin] = { 'open' : True, 'date' : dat.strftime('%m/%d/%Y %H:%M:%S') }
             
             # GameCreated Packet
-            return_msg = {'type' : 2, 'date' : dat.strftime('%m/%d/%Y %H:%M:%S') }
+            return_msg = {'id' : 2, 'date' : dat.strftime('%m/%d/%Y %H:%M:%S') }
             print return_msg
 
             # send back to the admin
@@ -56,7 +56,7 @@ class MessageInterpreter(object):
                     self.factory.users[user]['client'].transport.write(json.dumps(return_msg))  
             
         # GetOpenGames
-        elif self.message['type'] == '3':
+        elif self.message['id'] == '3':
             #print self.factory.games
             open_games = [ (admin, items) for admin, items in self.factory.games.iteritems() if items['open'] == True]
             print open_games
@@ -70,7 +70,7 @@ class MessageInterpreter(object):
                 ret_games[index]['date'] = game[1]['date']
             
             # OpenGameList
-            return_msg = {'type' : 4}
+            return_msg = {'id' : 4}
             return_msg = dict(return_msg.items() + ret_games.items())
             print json.dumps(return_msg)
             
