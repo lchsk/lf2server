@@ -63,7 +63,15 @@ class MessageInterpreter(object):
             print self.factory.games
             print len(self.factory.games)
             
-            return_msg = {'type' : 4, 'games' : open_games}
+            ret_games = {}
+            for index, game in enumerate(open_games):
+                ret_games[index] = {}
+                ret_games[index]['admin'] = game[0]
+                ret_games[index]['date'] = game[1]['date']
+            
+            # OpenGameList
+            return_msg = {'type' : 4}
+            return_msg = dict(return_msg.items() + ret_games.items())
             print json.dumps(return_msg)
             
             print self.protocol.transport.write(json.dumps(return_msg))
