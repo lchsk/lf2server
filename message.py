@@ -95,12 +95,20 @@ class MessageInterpreter(object):
 
             self.factory.users[admin]['client'].transport.write(json.dumps(return_msg))
             
+        # StartGame
         elif self.message['id'] == 9:
             admin = self.message['admin']
             
             self.factory.games[admin]['open'] = False
             
             # send 6 to everyone
+            
+            return_msg = {'id' : 6, 'players' : self.factory.games[admin]['players']}
+            print 'Create Heroes'
+            print return_msg
+            
+            for user in self.factory.users:
+                self.factory.users[user]['client'].transport.write(json.dumps(return_msg))
 
     def error(self, pack):
         print 'Error while interpreting'

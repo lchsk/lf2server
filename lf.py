@@ -41,5 +41,5 @@ if __name__ == "__main__":
     
     port = 8000
     reactor.listenTCP(port, factory)
-    print "Server running since " + time.strftime("%H:%M:%S") + '...'
+    print "Server running since " + time.strftime("%m/%d/%Y %H:%M:%S") + '...'
     reactor.run()
