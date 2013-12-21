@@ -15,7 +15,7 @@ class MessageInterpreter(object):
         self.protocol = pack[1]
         self.message = json.loads(self.raw_message)
         print self.message
-        print 'id: ' + self.message['id'] 
+        print 'id: ' + str(self.message['id'])
 
         # Welcome 
         #{"id": "W", "username": "lchsk", "platform":"A"}
@@ -41,22 +41,22 @@ class MessageInterpreter(object):
 
         # CreateGame Packet
         #{\"id\": \"1\", \"admin\": \"admin\"}
-        elif self.message['id'] == '1':
+        elif self.message['id'] == 1:
             admin = self.message['admin']
             dat = datetime.datetime.now()
-            self.factory.games[admin] = { 'open' : True, 'date' : dat.strftime('%m/%d/%Y %H:%M:%S') }
+            self.factory.games[admin] = { 'open' : True, 'date' : dat.strftime('%m/%d/%Y %H:%M:%S'), 'players': [admin] }
             
             # GameCreated Packet
             return_msg = {'id' : 2, 'date' : dat.strftime('%m/%d/%Y %H:%M:%S') }
             print return_msg
 
             # send back to the admin
-            for user in self.factory.users:
-                if user == self.message['admin']:
-                    self.factory.users[user]['client'].transport.write(json.dumps(return_msg))  
+            #for user in self.factory.users:
+            #    if user == self.message['admin']:
+            self.factory.users[admin]['client'].transport.write(json.dumps(return_msg))  
             
         # GetOpenGames
-        elif self.message['id'] == '3':
+        elif self.message['id'] == 3:
             #print self.factory.games
             open_games = [ (admin, items) for admin, items in self.factory.games.iteritems() if items['open'] == True]
             print open_games
@@ -75,7 +75,32 @@ class MessageInterpreter(object):
             print json.dumps(return_msg)
             
             print self.protocol.transport.write(json.dumps(return_msg))
+        
+        # Signin
+        elif self.message['id'] == 5:
+            admin = self.message['admin']
+            user = self.message['user']
+            
+            self.factory.games[admin]['players'].append(user)
+            
+            print self.factory.games
+            
+        # GetSignedInPlayers
+        elif self.message['id'] == 7:
+            admin = self.message['admin']
+            
+            return_msg = {'id' : 8, 'players' : self.factory.games[admin]['players']}
+            
+            print return_msg
 
+            self.factory.users[admin]['client'].transport.write(json.dumps(return_msg))
+            
+        elif self.message['id'] == 9:
+            admin = self.message['admin']
+            
+            self.factory.games[admin]['open'] = False
+            
+            # send 6 to everyone
 
     def error(self, pack):
         print 'Error while interpreting'
