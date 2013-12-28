@@ -16,7 +16,9 @@ class MessageInterpreter(object):
         self.factory = factory
         
         # Ending added to every outgoing string
-        self.ending = ''
+        self.ending = '\r\n'
+        
+        self.default_char = 'luke'
 
     def interpret(self, pack):
         
@@ -25,6 +27,7 @@ class MessageInterpreter(object):
         self.raw_message = pack[0]
         self.protocol = pack[1]
         self.message = json.loads(self.raw_message)
+        
         
         ############
         # Messages
@@ -35,6 +38,10 @@ class MessageInterpreter(object):
             self._data = {}
             self._data['platform'] = self.message['platform']
             self._data['client'] = pack[1]
+            self._data['pos'] = { 'x': 0, 'y': 0 }
+            
+            # Player's character (string)
+            self._data['char'] = None
             self.factory.users[self.message['username']] = self._data
             
             # 13 ConnectionEstablished
@@ -44,19 +51,24 @@ class MessageInterpreter(object):
 
         # Message
         #{"id":"M", "username": "lchsk", "x": "12", "y": "100", "anim": "1"}
-        elif self.message['id'] == 'M':
-            for user in self.factory.users:
-                if user != self.message['username']:
-                    self.factory.users[user]['client'].transport.write(self.raw_message)    
+        #elif self.message['id'] == 'M':
+        #    for user in self.factory.users:
+        #        if user != self.message['username']:
+        #            self.factory.users[user]['client'].transport.write(self.raw_message)    
 
         # 1 CreateGame
         elif self.message['id'] == 1:
             admin = self.message['admin']
+            character = self.message['character']
             dat = datetime.datetime.now()
             self.factory.games[admin] = { 'open' : True, 'date' : dat.strftime('%m/%d/%Y %H:%M:%S'), 'players': [admin] }
+
+            # Save character
+            self.factory.users[admin]['char'] = character
             
             # 2 GameCreated
             return_msg = {'id' : 2, 'date' : dat.strftime('%m/%d/%Y %H:%M:%S') }
+
             
             self.factory.users[admin]['client'].transport.write(json.dumps(return_msg) + self.ending)  
             
@@ -80,6 +92,9 @@ class MessageInterpreter(object):
         elif self.message['id'] == 5:
             admin = self.message['admin']
             user = self.message['user']
+            character = self.message['character']
+            
+            self.factory.users[user]['char'] = character
             
             self.factory.games[admin]['players'].append(user)
             
@@ -110,16 +125,49 @@ class MessageInterpreter(object):
                 self.protocol.transport.write(json.dumps(return_msg) + self.ending)
             else:
                 # game is on
-                self.create_heroes(admin)
+                self.create_herotees(admin)
+                
+        # 14 UpdatePosition
+        elif self.message['id'] == 14:
+            user = self.message['user']
+            x = self.message['x']
+            y = self.message['y']
+            
+            # Update positions
+            self.factory.users[user]['pos']['x'] = x
+            self.factory.users[user]['pos']['y'] = y
+            
+            # 15 PositionUpdated
+            return_msg = {'id' : 15}
+            
+            # Add positions of every player
+            for u in self.factory.users:
+                return_msg[u] = []
+                return_msg[u].append(self.factory.users[u]['pos']['x'])
+                return_msg[u].append(self.factory.users[u]['pos']['y'])
+            
+            for u in self.factory.users:
+                #if u != user:
+                    self.factory.users[u]['client'].transport.write(json.dumps(return_msg) + self.ending)
 
     def error(self, pack):
         print 'Error...'
+        self.factory.logfile.write(time.strftime("%m/%d/%Y %H:%M:%S") + '\t' + traceback.print_exc(file=sys.stdout) + '\n')
         traceback.print_exc(file=sys.stdout)
         
     # 6 CreateHeroes
     def create_heroes(self, admin):
+        
+        char_list = []
+        
+        for p in self.factory.games[admin]['players']:
+            c = self.factory.users[p]['char']
+            
+            if c == None:
+                c = default_char
+            char_list.append(c)
            
-        return_msg = {'id' : 6, 'players' : self.factory.games[admin]['players']}
+        return_msg = {'id' : 6, 'players' : self.factory.games[admin]['players'], 'characters' : char_list}
         
         for user in self.factory.users:
             self.factory.users[user]['client'].transport.write(json.dumps(return_msg) + self.ending)
