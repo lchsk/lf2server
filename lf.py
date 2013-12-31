@@ -10,15 +10,17 @@ class LfProtocol(basic.LineReceiver):
     def connectionMade(self):
         print "\n\nNew connection from", self.transport.getPeer().host
         factory.logfile.write(time.strftime("%m/%d/%Y %H:%M:%S") + '\t' + 'New connection from ' + str(self.transport.getPeer().host) + '\n')
+        
     
     def dataReceived(self, data):
         #print "ASCII value: ", ', '.join(str(ord(c)) for c in data)
         print repr(data)
         factory.logfile.write(time.strftime("%m/%d/%Y %H:%M:%S") + '\t' + repr(data) + '\n')
-        d = Deferred()
-        d.addCallback(interpreter.interpret)
-        d.addErrback(interpreter.error)
-        d.callback((data, self))
+        
+        self.d = Deferred()
+        self.d.addCallback(interpreter.interpret)
+        self.d.addErrback(interpreter.error)
+        self.d.callback((data, self))
 
 class LfServerFactory(protocol.ServerFactory):
 
