@@ -4,6 +4,7 @@ import json
 import traceback, sys
 import datetime
 import time
+import random
 
 class MessageInterpreter(object):
     def __init__(self, factory):
@@ -20,6 +21,8 @@ class MessageInterpreter(object):
         self.ending = '\r\n'
         
         self.default_char = 'luke'
+        
+        self.user_admin_pair = {}
 
     def interpret(self, pack):
         
@@ -59,6 +62,7 @@ class MessageInterpreter(object):
             # 1 CreateGame
             elif self.message['id'] == 1:
                 admin = self.message['admin']
+                self.user_admin_pair[admin] = admin
                 character = self.message['character']
                 dat = datetime.datetime.now()
                 self.factory.games[admin] = { 'open' : True, 'date' : dat.strftime('%m/%d/%Y %H:%M:%S'), 'players': [admin] }
@@ -96,7 +100,9 @@ class MessageInterpreter(object):
                 
                 self.factory.users[user]['char'] = character
                 
-                self.factory.games[admin]['players'].append(user)
+                if user not in self.factory.games[admin]['players']:
+                    self.factory.games[admin]['players'].append(user)
+                    self.user_admin_pair[user] = admin
                 
             # 7 GetSignedInPlayers
             elif self.message['id'] == 7:
@@ -130,6 +136,7 @@ class MessageInterpreter(object):
             # 14 UpdatePosition
             elif self.message['id'] == 14:
                 user = self.message['user']
+                admin = self.user_admin_pair[user]
                 x = self.message['x']
                 y = self.message['y']
                 
@@ -141,7 +148,7 @@ class MessageInterpreter(object):
                 return_msg = {'id' : 15}
                 
                 # Add positions of every player
-                for u in self.factory.users:
+                for u in self.factory.games[admin]['players']:
                     return_msg[u] = []
                     return_msg[u].append(self.factory.users[u]['pos']['x'])
                     return_msg[u].append(self.factory.users[u]['pos']['y'])
@@ -170,6 +177,18 @@ class MessageInterpreter(object):
     def create_heroes(self, admin):
         
         char_list = []
+        posx = []
+        posy = []
+        
+        # set up players starting positions
+        players_len = len(self.factory.games[admin]['players'])
+        step = 1.0 / players_len
+        current_step = step / 2.0
+        
+        for i in xrange(0, players_len):
+            posx.append(current_step)
+            posy.append(0.19 / random.randint(1, 10))
+            current_step += step
         
         for p in self.factory.games[admin]['players']:
             c = self.factory.users[p]['char']
@@ -178,7 +197,7 @@ class MessageInterpreter(object):
                 c = default_char
             char_list.append(c)
            
-        return_msg = {'id' : 6, 'players' : self.factory.games[admin]['players'], 'characters' : char_list}
+        return_msg = {'id' : 6, 'players' : self.factory.games[admin]['players'], 'characters' : char_list, 'posx' : posx, 'posy' : posy}
         
         for user in self.factory.users:
             self.factory.users[user]['client'].transport.write(json.dumps(return_msg) + self.ending)
