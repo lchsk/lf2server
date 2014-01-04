@@ -172,6 +172,29 @@ class MessageInterpreter(object):
                     if u != user:
                         self.factory.users[u]['client'].transport.write(json.dumps(return_msg) + self.ending)
 
+            # 18 Hit
+            elif self.message['id'] == 18:
+                user = self.message['user'] # victim
+                
+                return_msg = {'id' : 19, 'user' : user}
+                
+                for u in self.factory.users:
+                    #if u != user:
+                        self.factory.users[u]['client'].transport.write(json.dumps(return_msg) + self.ending)
+
+            # 20 HealthInfo
+            elif self.message['id'] == 20:
+                users = self.message['users']
+                health = self.message['health']
+                
+                return_msg = {'id' : 21, 'users' : users, 'health' : health}
+                
+                for u in self.factory.users:
+                    #if u != user:
+                        self.factory.users[u]['client'].transport.write(json.dumps(return_msg) + self.ending)
+
+
+
     def error(self, pack):
         print 'Error...'
         #self.factory.logfile.write(time.strftime("%m/%d/%Y %H:%M:%S") + '\t' + traceback.print_exc(file=sys.stdout) + '\n')
