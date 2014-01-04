@@ -14,7 +14,7 @@ class LfProtocol(basic.LineReceiver):
     
     def dataReceived(self, data):
         #print "ASCII value: ", ', '.join(str(ord(c)) for c in data)
-        print repr(data)
+        #print repr(data)
         factory.logfile.write(time.strftime("%m/%d/%Y %H:%M:%S") + '\t' + repr(data) + '\n')
         
         self.d = Deferred()
