@@ -37,7 +37,11 @@ class MessageInterpreter(object):
         for msg in jsons:
             #self.message = json.loads(self.raw_message)
             if msg != '':
-                self.message = json.loads(msg)
+                try:
+                    self.message = json.loads(msg)
+                except:
+                    #pass
+                    self.factory.logfile.write(time.strftime("%m/%d/%Y %H:%M:%S") + '\tMISSED: ' + repr(msg) + '\n')
         
             ############
             # Messages
@@ -165,7 +169,7 @@ class MessageInterpreter(object):
                 return_msg = {'id' : 17, 'user' : user, 'state' : state}
                 
                 for u in self.factory.users:
-                    #if u != user:
+                    if u != user:
                         self.factory.users[u]['client'].transport.write(json.dumps(return_msg) + self.ending)
 
     def error(self, pack):
